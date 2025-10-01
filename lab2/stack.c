@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef void (*Func)(int);
+
 typedef struct {
-    int *arr;      // dynamic array
-    int top;       // index of top element
-    int capacity;  // current allocated size
+    Func *arr;
+    int top;
+    int capacity;
 } Stack;
 
-// Initialize stack with a given capacity
 void init(Stack *s, int capacity) {
-    s->arr = (int *)malloc(capacity * sizeof(int));
+    s->arr = (Func *)malloc(capacity * sizeof(Func));
     if (!s->arr) {
         printf("Memory allocation failed!\n");
         exit(1);
@@ -18,18 +19,12 @@ void init(Stack *s, int capacity) {
     s->capacity = capacity;
 }
 
-int isEmpty(Stack *s) {
-    return s->top == -1;
-}
+int isEmpty(Stack *s) { return s->top == -1; }
+int isFull(Stack *s) { return s->top == s->capacity - 1; }
 
-int isFull(Stack *s) {
-    return s->top == s->capacity - 1;
-}
-
-// Resize stack when full (double capacity)
 void resize(Stack *s) {
     int new_capacity = s->capacity * 2;
-    int *new_arr = (int *)realloc(s->arr, new_capacity * sizeof(int));
+    Func *new_arr = (Func *)realloc(s->arr, new_capacity * sizeof(Func));
     if (!new_arr) {
         printf("Memory reallocation failed!\n");
         exit(1);
@@ -38,49 +33,26 @@ void resize(Stack *s) {
     s->capacity = new_capacity;
 }
 
-void push(Stack *s, int value) {
-    if (isFull(s)) {
-        resize(s);
-    }
-    s->arr[++s->top] = value;
-    printf("%d pushed\n", value);
+void push(Stack *s, Func f) {
+    if (isFull(s)) resize(s);
+    s->arr[++s->top] = f;
+    printf("Function pushed\n");
 }
 
-int pop(Stack *s) {
+Func pop(Stack *s) {
     if (isEmpty(s)) {
         printf("Stack underflow!\n");
-        return -1;
+        return NULL;
     }
     return s->arr[s->top--];
 }
 
-int peek(Stack *s) {
+Func peek(Stack *s) {
     if (isEmpty(s)) {
         printf("Stack empty!\n");
-        return -1;
+        return NULL;
     }
     return s->arr[s->top];
-}
-
-int size(Stack *s) {
-    return s->top + 1;
-}
-
-void clear(Stack *s) {
-    s->top = -1;
-    printf("Stack cleared!\n");
-}
-
-void display(Stack *s) {
-    if (isEmpty(s)) {
-        printf("Stack is empty!\n");
-        return;
-    }
-    printf("Stack: ");
-    for (int i = 0; i <= s->top; i++) {
-        printf("%d ", s->arr[i]);
-    }
-    printf("\n");
 }
 
 void freeStack(Stack *s) {
@@ -90,31 +62,35 @@ void freeStack(Stack *s) {
     s->capacity = 0;
 }
 
+void hello(int x) {
+    printf("Hello %d!\n", x);
+}
+
+void square(int x) {
+    printf("%d squared = %d\n", x, x*x);
+}
+
+void bye(int x) {
+    printf("Goodbye %d!\n", x);
+}
+
 int main() {
     Stack s;
-    init(&s, 5);  // start with capacity 5
+    init(&s, 2);
 
-    push(&s, 10);
-    push(&s, 20);
-    push(&s, 30);
-    push(&s, 40);
-    push(&s, 50);
-    push(&s, 60);  // will trigger resize
+    push(&s, hello);
+    push(&s, square);
+    push(&s, bye);
 
-    display(&s);
+    Func f = peek(&s);
+    if (f) f(5);
 
-    printf("Top = %d\n", peek(&s));
-    printf("Size = %d\n", size(&s));
+    while (!isEmpty(&s)) {
+        Func g = pop(&s);
+        g(3);  // call with argument
+    }
 
-    printf("Popped = %d\n", pop(&s));
-    printf("Popped = %d\n", pop(&s));
-
-    display(&s);
-
-    clear(&s);
-    display(&s);
-
-    freeStack(&s); // free memory at end
+    freeStack(&s);
     return 0;
 }
 
